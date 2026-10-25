@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/supabase/admin";
 import { isEnvConfigured } from "@/lib/env";
+import { verifyAdminRequest } from "@/lib/auth/admin";
 
 export const runtime = "nodejs";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!verifyAdminRequest(req)) {
+    return NextResponse.json(
+      { ok: false, error: "Unauthorized access. Valid admin session required." },
+      { status: 401 }
+    );
+  }
+
   const { id } = await params;
   if (!id) return NextResponse.json({ ok: false, error: "Missing ID" }, { status: 400 });
 
@@ -51,6 +59,13 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!verifyAdminRequest(req)) {
+    return NextResponse.json(
+      { ok: false, error: "Unauthorized access. Valid admin session required." },
+      { status: 401 }
+    );
+  }
+
   const { id } = await params;
   if (!id) return NextResponse.json({ ok: false, error: "Missing ID" }, { status: 400 });
 

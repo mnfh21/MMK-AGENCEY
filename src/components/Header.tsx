@@ -62,9 +62,6 @@ export function Header() {
           <a href="#capabilities" style={{ fontSize: "0.92rem", color: "var(--text-muted)", transition: "color var(--transition-fast)" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
             Tech Stack
           </a>
-          <a href="/admin" style={{ fontSize: "0.85rem", color: "#a5b4fc", padding: "0.3rem 0.6rem", borderRadius: "6px", background: "rgba(99, 102, 241, 0.1)", border: "1px solid rgba(99, 102, 241, 0.25)" }}>
-            Admin
-          </a>
         </nav>
 
         {/* CTA */}
@@ -126,7 +123,6 @@ export function Header() {
           <a href="#configurator" onClick={() => setMobileMenuOpen(false)} style={{ color: "var(--text-main)", fontSize: "1rem" }}>Project Builder</a>
           <a href="#tracker" onClick={() => setMobileMenuOpen(false)} style={{ color: "var(--text-main)", fontSize: "1rem" }}>Track Request</a>
           <a href="#capabilities" onClick={() => setMobileMenuOpen(false)} style={{ color: "var(--text-main)", fontSize: "1rem" }}>Tech Stack</a>
-          <a href="/admin" onClick={() => setMobileMenuOpen(false)} style={{ color: "#a5b4fc", fontSize: "1rem" }}>⚡ Admin Portal</a>
         </div>
       )}
 

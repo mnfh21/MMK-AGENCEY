@@ -61,6 +61,13 @@ function AdminContent() {
   const searchParams = useSearchParams();
   const initialProjectId = searchParams.get("project") || searchParams.get("id");
 
+  // Authentication states
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [passcodeInput, setPasscodeInput] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [submittingAuth, setSubmittingAuth] = useState(false);
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("all");
@@ -76,6 +83,64 @@ function AdminContent() {
   const [newNote, setNewNote] = useState<string>("");
   const [updateMsg, setUpdateMsg] = useState<{ text: string; success: boolean } | null>(null);
 
+  const checkAuthStatus = async () => {
+    try {
+      const res = await fetch("/api/admin/auth");
+      const json = await res.json();
+      if (json.authenticated) {
+        setIsAuthenticated(true);
+        fetchProjects();
+      } else {
+        setIsAuthenticated(false);
+        setLoading(false);
+      }
+    } catch {
+      setIsAuthenticated(false);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, [initialProjectId]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passcodeInput.trim()) return;
+    setSubmittingAuth(true);
+    setAuthError(null);
+
+    try {
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: passcodeInput.trim() }),
+      });
+      const json = await res.json();
+      if (json.ok && json.authenticated) {
+        setIsAuthenticated(true);
+        setPasscodeInput("");
+        fetchProjects();
+      } else {
+        setAuthError(json.error || "Access Denied: Invalid admin passcode.");
+      }
+    } catch {
+      setAuthError("Network error. Unable to verify credentials.");
+    } finally {
+      setSubmittingAuth(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/auth", { method: "DELETE" });
+    } finally {
+      setIsAuthenticated(false);
+      setProjects([]);
+      setSelectedProject(null);
+    }
+  };
+
   const fetchProjects = async () => {
     try {
       setLoading(true);
@@ -87,6 +152,8 @@ function AdminContent() {
           const match = json.data.find((p: Project) => p.id === initialProjectId || p.reference === initialProjectId);
           if (match) openProjectModal(match);
         }
+      } else if (res.status === 401) {
+        setIsAuthenticated(false);
       }
     } catch (err) {
       console.error("Failed to load projects", err);
@@ -94,10 +161,6 @@ function AdminContent() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchProjects();
-  }, [initialProjectId]);
 
   const openProjectModal = (p: Project) => {
     setSelectedProject(p);
@@ -209,6 +272,97 @@ function AdminContent() {
     });
   }, [projects, activeTab, search]);
 
+  if (isAuthenticated === null) {
+    return (
+      <div style={{ minHeight: "100vh", backgroundColor: "var(--bg-main)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1.4rem", color: "#fff", marginBottom: "1rem", boxShadow: "0 0 25px rgba(99, 102, 241, 0.5)" }}>
+            M
+          </div>
+          <div style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Verifying security credentials...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <div style={{ minHeight: "100vh", backgroundColor: "var(--bg-main)", display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", position: "relative" }}>
+        {/* Glow background effects */}
+        <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: "350px", height: "350px", background: "radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)", filter: "blur(60px)", pointerEvents: "none" }}></div>
+
+        <div className="glass-card" style={{ width: "100%", maxWidth: "460px", padding: "2.75rem 2rem", position: "relative", zIndex: 1, textAlign: "center", border: "1px solid var(--border-medium)" }}>
+          {/* Logo Badge */}
+          <div style={{ width: "54px", height: "54px", borderRadius: "14px", background: "linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1.5rem", color: "#fff", marginBottom: "1.25rem", boxShadow: "0 0 30px rgba(99, 102, 241, 0.6)" }}>
+            M
+          </div>
+
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
+            <span>🔒 Restricted Operations Portal</span>
+          </div>
+
+          <h2 style={{ fontSize: "1.6rem", fontWeight: 800, marginBottom: "0.5rem", color: "#fff" }}>
+            Admin Authorization
+          </h2>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.88rem", marginBottom: "2rem", lineHeight: 1.5 }}>
+            Authorized personnel only. Please enter the master agency security passcode to unlock pipeline controls.
+          </p>
+
+          {authError && (
+            <div style={{ padding: "0.75rem 1rem", borderRadius: "8px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.35)", color: "#fca5a5", fontSize: "0.85rem", marginBottom: "1.5rem", textAlign: "left" }}>
+              ⚠️ {authError}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{ position: "relative", textAlign: "left" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter Admin Passcode"
+                value={passcodeInput}
+                onChange={(e) => setPasscodeInput(e.target.value)}
+                autoFocus
+                required
+                className="form-control"
+                style={{ paddingRight: "2.75rem", fontSize: "0.95rem" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: "absolute", right: "0.85rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
+                aria-label="Toggle password view"
+              >
+                {showPassword ? "👁️" : "🔒"}
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              disabled={submittingAuth}
+              className="btn btn-primary"
+              style={{ width: "100%", justifyContent: "center", padding: "0.75rem" }}
+            >
+              <span>{submittingAuth ? "Authenticating..." : "Unlock Dashboard"}</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+          </form>
+
+          <div style={{ marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px solid var(--border-subtle)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Link href="/" style={{ color: "var(--text-muted)", fontSize: "0.82rem", textDecoration: "none" }}>
+              ← Back to Public Website
+            </Link>
+            <span style={{ color: "var(--text-dim)", fontSize: "0.75rem" }}>
+              HMAC SHA-256 Protected
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "var(--bg-main)", color: "var(--text-main)" }}>
       {/* Admin Top Navigation */}
@@ -294,6 +448,31 @@ function AdminContent() {
                 <line x1="10" y1="14" x2="21" y2="3"></line>
               </svg>
             </Link>
+
+            <button
+              onClick={handleLogout}
+              title="Lock Admin Session"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                padding: "0.45rem 0.85rem",
+                borderRadius: "8px",
+                border: "1px solid rgba(239, 68, 68, 0.35)",
+                background: "rgba(239, 68, 68, 0.1)",
+                color: "#fca5a5",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+            >
+              <span>Lock Portal</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </button>
           </div>
         </div>
       </header>

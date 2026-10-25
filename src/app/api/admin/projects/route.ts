@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/supabase/admin";
 import { isEnvConfigured } from "@/lib/env";
+import { verifyAdminRequest } from "@/lib/auth/admin";
 
 export const runtime = "nodejs";
 
@@ -73,6 +74,13 @@ const MOCK_PROJECTS = [
 ];
 
 export async function GET(req: Request) {
+  if (!verifyAdminRequest(req)) {
+    return NextResponse.json(
+      { ok: false, error: "Unauthorized access. Valid admin session required." },
+      { status: 401 }
+    );
+  }
+
   const { searchParams } = new URL(req.url);
   const statusFilter = searchParams.get("status");
   const searchQuery = searchParams.get("q")?.toLowerCase();

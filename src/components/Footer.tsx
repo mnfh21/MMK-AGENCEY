@@ -56,7 +56,6 @@ export function Footer() {
               <a href="#configurator">Interactive Project Builder</a>
               <a href="#tracker">Status & Telemetry Tracker</a>
               <a href="#capabilities">Engineering Standards</a>
-              <a href="/admin" style={{ color: "#a5b4fc" }}>Admin Portal ⚡</a>
             </div>
           </div>
 
@@ -88,10 +87,12 @@ export function Footer() {
           <div>
             © {new Date().getFullYear()} MMK Digital Agency. All rights reserved.
           </div>
-          <div style={{ display: "flex", gap: "1.5rem" }}>
+          <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
             <span>TypeScript Certified</span>
             <span>Next.js 15 Native</span>
-            <span>Supabase Cloud</span>
+            <a href="/admin" title="Operations Portal" style={{ color: "var(--text-dim)", textDecoration: "none", opacity: 0.5, transition: "opacity 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")} onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.5")}>
+              🔒 Staff
+            </a>
           </div>
         </div>
       </div>

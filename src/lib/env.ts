@@ -9,6 +9,7 @@ const schema = z.object({
   RESEND_FROM_EMAIL: z.string().min(3).default("MMK Agency <hello@example.com>"),
   NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
   AGENCY_NOTIFY_EMAIL: z.string().email().default("mm0491762@gmail.com"),
+  ADMIN_PASSWORD: z.string().min(6).default("mmk2026admin"),
 });
 
 let cached: z.infer<typeof schema> | undefined;
